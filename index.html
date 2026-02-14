@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buysell Central</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="data-panel">
+      <div class="panel-header">
+        <h1>Stock Watchlist</h1>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="sortable">SYM <span>▼</span></th>
+              <th class="sortable">P1 <span>▼</span></th>
+              <th class="sortable">P2 <span>▼</span></th>
+              <th class="sortable">P3 <span>▼</span></th>
+              <th class="sortable">P4 <span>▼</span></th>
+              <th class="sortable"># RSI <span>▼</span></th>
+              <th class="sortable">Other Info <span>▼</span></th>
+              <th class="sortable">Status <span>▼</span></th>
+              <th class="sortable">Chart <span>▼</span></th>
+            </tr>
+          </thead>
+          <tbody id="stock-rows">
+            <!-- Stock Watchlist: populate via app.js or your custom logic -->
+          </tbody>
+        </table>
+      </div>
+    </aside>
+    <section class="chart-panel">
+      <div class="chart-header">
+        <span id="current-symbol">—</span>
+        <a id="open-external" href="#" target="_blank" rel="noopener">Open in new tab</a>
+      </div>
+      <div class="chart-display">
+        <div id="chart-container"></div>
+        <p class="chart-hint"><a id="fallback-link" href="https://www.tradingview.com/chart/" target="_blank" rel="noopener">Open TradingView in new tab</a></p>
+      </div>
+    </section>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
