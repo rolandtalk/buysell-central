@@ -36,6 +36,15 @@ python3 -m http.server 8080
 # Then open http://localhost:8080
 ```
 
-## Deploy
+## Deploy to GitHub
 
-Static site. Host on GitHub Pages, Netlify, Vercel, or any static host.
+1. Create a new repo on GitHub named `buysell-central` (or your preferred name).
+2. Add remote and push:
+
+   ```bash
+   git remote add origin https://github.com/YOUR_USERNAME/buysell-central.git
+   git branch -M main
+   git push -u origin main
+   ```
+
+3. Optionally enable **GitHub Pages** (Settings → Pages → Source: main branch) to host the app.
