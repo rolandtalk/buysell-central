@@ -66,3 +66,14 @@ python3 -m http.server 8080
    ```
 
    The script copies `index.html`, `app.js`, and `styles.css` into `.pages-deploy` and runs `wrangler pages deploy`. The site will be live at `https://buysell-central.pages.dev` (or a similar `.pages.dev` URL).
+
+## Symbol records (CUB / FT / Star list) → GitHub
+
+Symbol lists are stored in the browser (localStorage) and optionally in the repo as `symbols.json`. To **update GitHub from your localhost data**:
+
+1. Open the app (e.g. on localhost), then click **Export symbols** in the chart header. This downloads `symbols.json` with your current CUB, FT, and Star list.
+2. Save the file into the project root (replace the existing `symbols.json`).
+3. Commit and push:  
+   `git add symbols.json && git commit -m "Update symbol records" && git push origin main`
+
+New loads (or other devices) will seed from `symbols.json` when localStorage is empty.
