@@ -4,7 +4,7 @@ Stock watchlist with embedded TradingView charts. Split layout: data table on th
 
 ## Layout
 
-- **Left panel (65%)**: Stock Watchlist table — columns SYM, P1–P4, RSI, Other Info, Status, Chart
+- **Left panel (65%)**: Stock Watchlist table — columns SYM, 1D/5D/20D/60D, RSI, Curves (click row to load chart)
 - **Right panel (35%)**: TradingView chart — embedded via iframe using widgetembed URL
 
 ## TradingView Widget

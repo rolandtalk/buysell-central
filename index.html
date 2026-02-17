@@ -8,41 +8,154 @@
 </head>
 <body>
   <div class="app-container">
-    <aside class="data-panel">
-      <div class="panel-header">
-        <h1>Stock Watchlist</h1>
+    <nav class="nav-bar">
+      <div class="nav-title">NAVIGATION</div>
+      <div class="nav-buttons">
+        <a href="#home" id="nav-home">Home</a>
+        <a href="#ri" id="nav-ri">RI</a>
+        <a href="#cub" id="nav-cub">CUB</a>
+        <a href="#ft" id="nav-ft">FT</a>
+        <a href="#oo" id="nav-oo">OO</a>
       </div>
-      <div class="table-wrapper">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th class="sortable">SYM <span>▼</span></th>
-              <th class="sortable">P1 <span>▼</span></th>
-              <th class="sortable">P2 <span>▼</span></th>
-              <th class="sortable">P3 <span>▼</span></th>
-              <th class="sortable">P4 <span>▼</span></th>
-              <th class="sortable"># RSI <span>▼</span></th>
-              <th class="sortable">Other Info <span>▼</span></th>
-              <th class="sortable">Status <span>▼</span></th>
-              <th class="sortable">Chart <span>▼</span></th>
-            </tr>
-          </thead>
-          <tbody id="stock-rows">
-            <!-- Stock Watchlist: populate via app.js or your custom logic -->
-          </tbody>
-        </table>
+    </nav>
+
+    <div class="app-main">
+      <!-- Home + RI share this layout: left = list/table, right = chart -->
+      <div id="main-with-chart" class="main-with-chart">
+        <div class="content-left">
+          <!-- Home: Star List -->
+          <section id="panel-home" class="page-panel">
+            <div class="home-panel">
+              <h2>Star List</h2>
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Star</th>
+                      <th class="sortable" data-sort="sym" data-table="home">SYM <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p1" data-table="home">1D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p2" data-table="home">5D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p3" data-table="home">20D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p4" data-table="home">60D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="rsi" data-table="home"># RSI <span class="sort-icon">▼</span></th>
+                      <th>Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody id="star-list"></tbody>
+                </table>
+              </div>
+              <p id="empty-star-msg" class="empty-star-msg" style="display: none;">
+                No starred symbols. Go to <a href="#ri">Rebound Index (RI)</a> and star symbols to add them here.
+              </p>
+            </div>
+          </section>
+
+          <!-- RI: Rebound Index table -->
+          <section id="panel-ri" class="page-panel">
+            <aside class="data-panel">
+              <div class="panel-header">
+                <h1>Rebound Index <span class="panel-remark">(automated by sctr-railway-api)</span></h1>
+              </div>
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Star</th>
+                      <th class="sortable" data-sort="sym">SYM <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p1">1D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p2">5D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p3">20D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p4">60D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="rsi"># RSI <span class="sort-icon">▼</span></th>
+                      <th>Curves</th>
+                    </tr>
+                  </thead>
+                  <tbody id="stock-rows"></tbody>
+                </table>
+              </div>
+            </aside>
+          </section>
+
+          <!-- CUB: custom list (add/remove symbols) -->
+          <section id="panel-cub" class="page-panel">
+            <aside class="data-panel">
+              <div class="panel-header">
+                <h1>CUB</h1>
+                <div class="cub-add-bar">
+                  <input type="text" id="cub-symbol-input" placeholder="Symbol (e.g. AAPL)" maxlength="12" />
+                  <button type="button" id="cub-add-btn">Add</button>
+                </div>
+              </div>
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Star</th>
+                      <th class="sortable" data-sort="sym" data-table="cub">SYM <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p1" data-table="cub">1D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p2" data-table="cub">5D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p3" data-table="cub">20D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p4" data-table="cub">60D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="rsi" data-table="cub"># RSI <span class="sort-icon">▼</span></th>
+                      <th>Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cub-rows"></tbody>
+                </table>
+              </div>
+            </aside>
+          </section>
+
+          <!-- FT: identical to CUB (add/remove symbols) -->
+          <section id="panel-ft" class="page-panel">
+            <aside class="data-panel">
+              <div class="panel-header">
+                <h1>FT</h1>
+                <div class="cub-add-bar">
+                  <input type="text" id="ft-symbol-input" placeholder="Symbol (e.g. AAPL)" maxlength="12" />
+                  <button type="button" id="ft-add-btn">Add</button>
+                </div>
+              </div>
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Star</th>
+                      <th class="sortable" data-sort="sym" data-table="ft">SYM <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p1" data-table="ft">1D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p2" data-table="ft">5D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p3" data-table="ft">20D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p4" data-table="ft">60D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="rsi" data-table="ft"># RSI <span class="sort-icon">▼</span></th>
+                      <th>Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ft-rows"></tbody>
+                </table>
+              </div>
+            </aside>
+          </section>
+        </div>
+        <section class="chart-panel">
+          <div class="chart-header">
+            <span id="current-symbol">—</span>
+            <a id="open-external" href="#" target="_blank" rel="noopener">Open in new tab</a>
+          </div>
+          <div class="chart-display">
+            <div id="chart-container"></div>
+            <p class="chart-hint"><a id="fallback-link" href="https://www.tradingview.com/chart/" target="_blank" rel="noopener">Open TradingView in new tab</a></p>
+          </div>
+        </section>
       </div>
-    </aside>
-    <section class="chart-panel">
-      <div class="chart-header">
-        <span id="current-symbol">—</span>
-        <a id="open-external" href="#" target="_blank" rel="noopener">Open in new tab</a>
-      </div>
-      <div class="chart-display">
-        <div id="chart-container"></div>
-        <p class="chart-hint"><a id="fallback-link" href="https://www.tradingview.com/chart/" target="_blank" rel="noopener">Open TradingView in new tab</a></p>
-      </div>
-    </section>
+
+      <!-- OO: Watchlist -->
+      <section id="panel-oo" class="page-panel">
+        <div class="placeholder-panel">
+          <h2>Watchlist (OO)</h2>
+          <p>Content coming soon.</p>
+        </div>
+      </section>
+    </div>
   </div>
   <script src="app.js"></script>
 </body>

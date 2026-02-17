@@ -1,40 +1,229 @@
+/* Buysell Central – dark theme, navigation bar */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+:root {
+  --bg-dark: #0f1419;
+  --bg-nav: #0f1419;
+  --bg-panel: #1a2332;
+  --bg-button: #2d3748;
+  --bg-button-active: #7c3aed;
+  --text-primary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --border: #334155;
+  --positive: #4ade80;
+  --negative: #f87171;
+  --link: #93c5fd;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 13px;
-  color: #1a1a1a;
+  color: var(--text-primary);
+  background: var(--bg-dark);
   height: 100vh;
   overflow: hidden;
 }
 
+/* ---------- Navigation bar (reference design) ---------- */
+.nav-bar {
+  background: var(--bg-nav);
+  padding: 12px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.nav-bar .nav-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.nav-buttons a:first-child {
+  margin-right: 24px;
+}
+
+.nav-buttons a {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--bg-button);
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 13px;
+  transition: background 0.15s ease;
+}
+
+.nav-buttons a:hover {
+  background: #374151;
+}
+
+.nav-buttons a.active {
+  background: var(--bg-button-active);
+  color: var(--text-primary);
+}
+
+/* ---------- App layout ---------- */
 .app-container {
   display: flex;
+  flex-direction: column;
   height: 100vh;
 }
 
-/* Left data panel */
+.app-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* Home + RI share left column + chart; RH/OO are full-width */
+.main-with-chart {
+  display: none;
+  flex: 1;
+  flex-direction: row;
+  min-height: 0;
+  min-width: 0;
+}
+
+.main-with-chart.visible {
+  display: flex;
+}
+
+.content-left {
+  flex: 0 0 65%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.content-left .page-panel {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.content-left .page-panel.active {
+  display: flex;
+}
+
+/* Standalone panels (RH, OO) */
+.app-main > .page-panel {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+}
+
+.app-main > .page-panel.active {
+  display: flex;
+}
+
+/* ---------- RI: Rebound Index table (inside content-left) ---------- */
+#panel-ri .data-panel,
+#panel-cub .data-panel,
+#panel-ft .data-panel {
+  flex: 1;
+  min-height: 0;
+}
+
 .data-panel {
   flex: 0 0 65%;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  border-right: 1px solid #ddd;
+  border-right: 1px solid var(--border);
+  background: var(--bg-panel);
 }
 
 .panel-header {
   padding: 12px 16px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e0e0e0;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--border);
 }
 
 .panel-header h1 {
   font-size: 18px;
   font-weight: 600;
+  color: var(--text-primary);
+}
+
+.panel-header .panel-remark {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.cub-add-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+.cub-add-bar input {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  font-size: 13px;
+  width: 140px;
+}
+
+.cub-add-bar input::placeholder {
+  color: var(--text-muted);
+}
+
+.cub-add-bar input:focus {
+  outline: none;
+  border-color: var(--bg-button-active);
+}
+
+.cub-add-bar button {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: var(--bg-button-active);
+  color: var(--text-primary);
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.cub-add-bar button:hover {
+  filter: brightness(1.1);
+}
+
+.data-table .remove-btn {
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  padding: 2px 6px;
+  line-height: 1;
+}
+
+.data-table .remove-btn:hover {
+  color: var(--negative);
 }
 
 .table-wrapper {
@@ -51,64 +240,101 @@ body {
 .data-table td {
   padding: 8px 12px;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
 }
 
 .data-table th {
-  background: #f0f0f0;
+  background: rgba(0, 0, 0, 0.25);
   font-weight: 600;
   white-space: nowrap;
   position: sticky;
   top: 0;
   z-index: 1;
+  color: var(--text-muted);
 }
 
 .data-table th.sortable {
   cursor: pointer;
 }
 
-.data-table th.sortable span {
-  opacity: 0.5;
+.data-table th.sortable:hover {
+  color: var(--text-primary);
+}
+
+.data-table th.sortable .sort-icon {
+  opacity: 0.7;
   font-size: 10px;
+  margin-left: 2px;
 }
 
 .data-table tbody tr:hover {
-  background: #f5f8fa;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .data-table tbody tr.selected {
-  background: #e3f2fd;
+  background: rgba(124, 58, 237, 0.2);
 }
 
 .data-table .positive {
-  color: #1b5e20;
+  color: var(--positive);
 }
 
 .data-table .negative {
-  color: #c62828;
+  color: var(--negative);
 }
 
-.data-table .chart-link {
-  color: #1565c0;
-  text-decoration: underline;
+.data-table .star-btn {
   cursor: pointer;
+  background: none;
+  border: none;
+  font-size: 18px;
+  padding: 2px 4px;
+  line-height: 1;
+  color: var(--text-muted);
+  transition: color 0.15s;
 }
 
-.data-table .chart-link:hover {
-  color: #0d47a1;
+.data-table .star-btn:hover {
+  color: #fbbf24;
 }
 
-.data-table input[type="checkbox"] {
+.data-table .star-btn.starred {
+  color: #fbbf24;
+}
+
+.data-table .loading-cell,
+.data-table .error-cell,
+.data-table .empty-cell {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 24px;
+}
+
+.data-table .error-cell .retry-btn {
+  margin-left: 12px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: var(--bg-button-active);
+  color: var(--text-primary);
+  font-weight: 500;
   cursor: pointer;
+  font-size: 13px;
 }
 
-/* Right chart panel */
+.data-table .error-cell .retry-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* Chart panel */
 .chart-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: #2e7d32;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border);
 }
 
 .chart-header {
@@ -116,8 +342,9 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  background: rgba(0, 0, 0, 0.15);
-  color: white;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
 }
 
 .chart-header #current-symbol {
@@ -126,7 +353,7 @@ body {
 }
 
 .chart-header a {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--link);
   text-decoration: none;
   font-size: 12px;
 }
@@ -146,7 +373,7 @@ body {
 #chart-container {
   flex: 1;
   min-height: 200px;
-  background: white;
+  background: #1e293b;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -161,10 +388,67 @@ body {
 .chart-hint {
   margin-top: 8px;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-muted);
 }
 
 .chart-hint a {
-  color: #90caf9;
+  color: var(--link);
   text-decoration: underline;
+}
+
+/* ---------- Home: Star list ---------- */
+#panel-home .home-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-panel {
+  padding: 24px;
+  overflow: auto;
+  background: var(--bg-panel);
+}
+
+.home-panel h2 {
+  font-size: 20px;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.home-panel .data-table .sym-link {
+  color: var(--link);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.home-panel .data-table .sym-link:hover {
+  text-decoration: underline;
+}
+
+.home-panel .empty-star-msg {
+  color: var(--text-muted);
+  padding: 24px 0;
+}
+
+.home-panel .empty-star-msg a {
+  color: var(--link);
+  text-decoration: underline;
+}
+
+/* ---------- Placeholder pages (RH, OO) ---------- */
+.placeholder-panel {
+  padding: 24px;
+  overflow: auto;
+  background: var(--bg-panel);
+}
+
+.placeholder-panel h2 {
+  font-size: 20px;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.placeholder-panel p {
+  color: var(--text-muted);
 }
