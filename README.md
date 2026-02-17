@@ -48,3 +48,21 @@ python3 -m http.server 8080
    ```
 
 3. Optionally enable **GitHub Pages** (Settings → Pages → Source: main branch) to host the app.
+
+## Deploy to Cloudflare Pages
+
+1. Install and log in (one-time):
+
+   ```bash
+   npx wrangler login
+   ```
+
+   Or for CI: create an API token at [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens) and set `CLOUDFLARE_API_TOKEN`.
+
+2. Deploy:
+
+   ```bash
+   ./deploy-cloudflare.sh
+   ```
+
+   The script copies `index.html`, `app.js`, and `styles.css` into `.pages-deploy` and runs `wrangler pages deploy`. The site will be live at `https://buysell-central.pages.dev` (or a similar `.pages.dev` URL).

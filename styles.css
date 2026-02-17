@@ -362,6 +362,19 @@ body {
   text-decoration: underline;
 }
 
+.export-symbols-btn {
+  padding: 6px 10px;
+  font-size: 12px;
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.export-symbols-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .chart-display {
   flex: 1;
   display: flex;

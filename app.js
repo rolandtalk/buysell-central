@@ -65,6 +65,33 @@ function isStarred(sym) {
   return getStarred().some((x) => (typeof x === 'string' ? x : x.sym) === sym);
 }
 
+/** Export CUB, FT, and starred lists as symbols.json for saving to repo / GitHub */
+function exportSymbols() {
+  const data = {
+    cub: getCubSymbols(),
+    ft: getFtSymbols(),
+    starred: getStarred(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'symbols.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/** Seed CUB/FT/starred from symbols.json when localStorage is empty (e.g. first load or new device) */
+async function seedFromSymbolsJson() {
+  try {
+    const res = await fetch('symbols.json');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.cub?.length && !localStorage.getItem(CUB_STORAGE_KEY)) setCubSymbols(data.cub);
+    if (data.ft?.length && !localStorage.getItem(FT_STORAGE_KEY)) setFtSymbols(data.ft);
+    if (Array.isArray(data.starred) && data.starred.length && !localStorage.getItem(STAR_STORAGE_KEY)) setStarred(data.starred);
+  } catch (_) { /* no symbols.json or network */ }
+}
+
 // --- Navigation ---
 const PANELS = { home: 'panel-home', ri: 'panel-ri', cub: 'panel-cub', ft: 'panel-ft', oo: 'panel-oo' };
 const NAV_IDS = { home: 'nav-home', ri: 'nav-ri', cub: 'nav-cub', ft: 'nav-ft', oo: 'nav-oo' };
@@ -965,8 +992,10 @@ function renderTable(stocks) {
 
 // --- Init ---
 document.addEventListener('DOMContentLoaded', async () => {
+  await seedFromSymbolsJson();
   initNav();
   renderStarList();
+  document.getElementById('export-symbols')?.addEventListener('click', exportSymbols);
   setupSortHandlers();
   setupHomeSortHandlers();
   setupCubSortHandlers();
