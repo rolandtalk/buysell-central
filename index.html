@@ -135,6 +135,36 @@
               </div>
             </aside>
           </section>
+
+          <!-- OO: same structure as CUB/FT (add/remove symbols, own list) -->
+          <section id="panel-oo" class="page-panel">
+            <aside class="data-panel">
+              <div class="panel-header">
+                <h1>OO</h1>
+                <div class="cub-add-bar">
+                  <input type="text" id="oo-symbol-input" placeholder="Symbol (e.g. AAPL)" maxlength="12" />
+                  <button type="button" id="oo-add-btn">Add</button>
+                </div>
+              </div>
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Star</th>
+                      <th class="sortable" data-sort="sym" data-table="oo">SYM <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p1" data-table="oo">1D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p2" data-table="oo">5D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p3" data-table="oo">20D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="p4" data-table="oo">60D <span class="sort-icon">▼</span></th>
+                      <th class="sortable" data-sort="rsi" data-table="oo"># RSI <span class="sort-icon">▼</span></th>
+                      <th>Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody id="oo-rows"></tbody>
+                </table>
+              </div>
+            </aside>
+          </section>
         </div>
         <section class="chart-panel">
           <div class="chart-header">
@@ -148,14 +178,6 @@
           </div>
         </section>
       </div>
-
-      <!-- OO: Watchlist -->
-      <section id="panel-oo" class="page-panel">
-        <div class="placeholder-panel">
-          <h2>Watchlist (OO)</h2>
-          <p>Content coming soon.</p>
-        </div>
-      </section>
     </div>
   </div>
   <script src="app.js"></script>

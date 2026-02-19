@@ -7,6 +7,10 @@
 const STAR_STORAGE_KEY = 'buysell-starred';
 const CUB_STORAGE_KEY = 'buysell-cub-symbols';
 const FT_STORAGE_KEY = 'buysell-ft-symbols';
+const OO_STORAGE_KEY = 'buysell-oo-symbols';
+const CUB_CACHE_KEY = 'buysell-cub-cache';
+const FT_CACHE_KEY = 'buysell-ft-cache';
+const OO_CACHE_KEY = 'buysell-oo-cache';
 
 const CUB_DEFAULT_SYMBOLS = [
   'AAPL', 'ABBNY', 'ABBV', 'ALB', 'AMZN', 'ARKX', 'ARM', 'AVAV', 'BABA', 'CRSP',
@@ -22,8 +26,12 @@ const FT_DEFAULT_SYMBOLS = [
   'UBER', 'XLF', 'XME',
 ];
 
+const OO_DEFAULT_SYMBOLS = ['AAPL', 'GOOG', 'META', 'MSFT', 'NVDA', 'TSLA'];
+
 // --- API ---
-const API_BASE = (typeof location !== 'undefined' && /^localhost$|^127\.0\.0\.1$/i.test(location.hostname))
+// Use same-origin when localhost (serve.py proxy) or Cloudflare Pages (Pages Function proxy); else direct Railway URL
+const API_BASE = (typeof location !== 'undefined' &&
+  (/^localhost$|^127\.0\.0\.1$/i.test(location.hostname) || /\.pages\.dev$/i.test(location.hostname)))
   ? ''
   : 'https://web-production-1b15c.up.railway.app';
 
@@ -70,6 +78,7 @@ function exportSymbols() {
   const data = {
     cub: getCubSymbols(),
     ft: getFtSymbols(),
+    oo: getOoSymbols(),
     starred: getStarred(),
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -88,6 +97,7 @@ async function seedFromSymbolsJson() {
     const data = await res.json();
     if (data.cub?.length && !localStorage.getItem(CUB_STORAGE_KEY)) setCubSymbols(data.cub);
     if (data.ft?.length && !localStorage.getItem(FT_STORAGE_KEY)) setFtSymbols(data.ft);
+    if (data.oo?.length && !localStorage.getItem(OO_STORAGE_KEY)) setOoSymbols(data.oo);
     if (Array.isArray(data.starred) && data.starred.length && !localStorage.getItem(STAR_STORAGE_KEY)) setStarred(data.starred);
   } catch (_) { /* no symbols.json or network */ }
 }
@@ -103,7 +113,7 @@ function getPageFromHash() {
 
 function showPanel(page) {
   const mainWithChart = document.getElementById('main-with-chart');
-  if (mainWithChart) mainWithChart.classList.toggle('visible', page === 'home' || page === 'ri' || page === 'cub' || page === 'ft');
+  if (mainWithChart) mainWithChart.classList.toggle('visible', page === 'home' || page === 'ri' || page === 'cub' || page === 'ft' || page === 'oo');
 
   Object.values(PANELS).forEach((id) => {
     document.getElementById(id).classList.toggle('active', id === PANELS[page]);
@@ -120,6 +130,7 @@ function refreshPanel(page) {
   if (page === 'ri' && STOCKS.length > 0) renderTable(getSortedStocks());
   if (page === 'cub') ensureCubDataThenRender();
   if (page === 'ft') ensureFtDataThenRender();
+  if (page === 'oo') ensureOoDataThenRender();
 }
 
 function ensureRIDataThenRenderStarList() {
@@ -317,7 +328,7 @@ function loadChart(symbol) {
 
   injectTradingViewWidget(symbol);
 
-  document.querySelectorAll('#stock-rows tr[data-sym], #star-list tr[data-sym], #cub-rows tr[data-sym], #ft-rows tr[data-sym]').forEach((row) => {
+  document.querySelectorAll('#stock-rows tr[data-sym], #star-list tr[data-sym], #cub-rows tr[data-sym], #ft-rows tr[data-sym], #oo-rows tr[data-sym]').forEach((row) => {
     row.classList.toggle('selected', row.dataset.sym === symbol);
   });
 }
@@ -381,14 +392,62 @@ async function fetchCubData() {
   return fetchCubDataForSymbols(getCubSymbols());
 }
 
+function saveCubCache() {
+  try {
+    if (CUB_STOCKS.length > 0) {
+      localStorage.setItem(CUB_CACHE_KEY, JSON.stringify({
+        symbols: getCubSymbols(),
+        rows: CUB_STOCKS.slice(),
+      }));
+    } else {
+      localStorage.removeItem(CUB_CACHE_KEY);
+    }
+  } catch (_) { /* ignore */ }
+}
+
+function sameSymbolSet(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+  const set = new Set(b.map((s) => String(s).toUpperCase()));
+  return a.every((s) => set.has(String(s).toUpperCase()));
+}
+
+function rowsInSymbolOrder(rows, symbolList) {
+  const bySym = new Map(rows.map((r) => [r.sym, r]));
+  return symbolList.map((sym) => bySym.get(sym)).filter(Boolean);
+}
+
 function ensureCubDataThenRender() {
   const tbody = document.getElementById('cub-rows');
   if (!tbody) return;
+  // If we already have CUB data in memory (e.g. user switched back), just re-render
+  if (CUB_STOCKS.length > 0) {
+    renderCubTable(getSortedCubStocks());
+    return;
+  }
+  // After refresh: restore from localStorage first so the table appears instantly (no loading)
+  const currentSymbols = getCubSymbols();
+  try {
+    const raw = localStorage.getItem(CUB_CACHE_KEY);
+    if (raw && currentSymbols.length > 0) {
+      const { symbols, rows } = JSON.parse(raw);
+      if (Array.isArray(rows) && rows.length > 0 && sameSymbolSet(symbols, currentSymbols)) {
+        const ordered = rowsInSymbolOrder(rows, currentSymbols);
+        if (ordered.length > 0) {
+          CUB_STOCKS.length = 0;
+          CUB_STOCKS.push(...ordered);
+          renderCubTable(getSortedCubStocks());
+          if (ordered.length > 0) loadChart(ordered[0].sym);
+          return;
+        }
+      }
+    }
+  } catch (_) { /* ignore bad cache */ }
   tbody.innerHTML = '<tr><td colspan="8" class="loading-cell">Loading CUB…</td></tr>';
   fetchCubData()
     .then((rows) => {
       CUB_STOCKS.length = 0;
       CUB_STOCKS.push(...rows);
+      saveCubCache();
       renderCubTable(getSortedCubStocks());
       if (rows.length > 0) loadChart(rows[0].sym);
     })
@@ -441,6 +500,7 @@ function renderCubTable(stocks) {
       removeCubSymbol(sym);
       const idx = CUB_STOCKS.findIndex((s) => s.sym === sym);
       if (idx >= 0) CUB_STOCKS.splice(idx, 1);
+      saveCubCache();
       const tr = tbody.querySelector(`tr[data-sym="${sym}"]`);
       if (tr) tr.remove();
       if (CUB_STOCKS.length === 0) {
@@ -512,6 +572,7 @@ function attachCubRowListeners(tr) {
       removeCubSymbol(sym);
       const idx = CUB_STOCKS.findIndex((s) => s.sym === sym);
       if (idx >= 0) CUB_STOCKS.splice(idx, 1);
+      saveCubCache();
       tr.remove();
       if (CUB_STOCKS.length === 0 && tbody) {
         tbody.innerHTML = '<tr><td colspan="8" class="empty-cell">No symbols. Add one above.</td></tr>';
@@ -554,6 +615,7 @@ function setupCubAddRemove() {
         if (rows.length === 0) return;
         const row = rows[0];
         CUB_STOCKS.push(row);
+        saveCubCache();
         const sorted = getSortedCubStocks();
         const idx = sorted.findIndex((s) => s.sym === sym);
         const emptyRow = tbody.querySelector('.empty-cell');
@@ -615,14 +677,51 @@ async function fetchFtData() {
   return fetchCubDataForSymbols(getFtSymbols());
 }
 
+function saveFtCache() {
+  try {
+    if (FT_STOCKS.length > 0) {
+      localStorage.setItem(FT_CACHE_KEY, JSON.stringify({
+        symbols: getFtSymbols(),
+        rows: FT_STOCKS.slice(),
+      }));
+    } else {
+      localStorage.removeItem(FT_CACHE_KEY);
+    }
+  } catch (_) { /* ignore */ }
+}
+
 function ensureFtDataThenRender() {
   const tbody = document.getElementById('ft-rows');
   if (!tbody) return;
+  // If we already have FT data in memory (e.g. user switched back), just re-render
+  if (FT_STOCKS.length > 0) {
+    renderFtTable(getSortedFtStocks());
+    return;
+  }
+  // After refresh: restore from localStorage first so the table appears instantly (no loading)
+  const currentSymbols = getFtSymbols();
+  try {
+    const raw = localStorage.getItem(FT_CACHE_KEY);
+    if (raw && currentSymbols.length > 0) {
+      const { symbols, rows } = JSON.parse(raw);
+      if (Array.isArray(rows) && rows.length > 0 && sameSymbolSet(symbols, currentSymbols)) {
+        const ordered = rowsInSymbolOrder(rows, currentSymbols);
+        if (ordered.length > 0) {
+          FT_STOCKS.length = 0;
+          FT_STOCKS.push(...ordered);
+          renderFtTable(getSortedFtStocks());
+          if (ordered.length > 0) loadChart(ordered[0].sym);
+          return;
+        }
+      }
+    }
+  } catch (_) { /* ignore bad cache */ }
   tbody.innerHTML = '<tr><td colspan="8" class="loading-cell">Loading FT…</td></tr>';
   fetchFtData()
     .then((rows) => {
       FT_STOCKS.length = 0;
       FT_STOCKS.push(...rows);
+      saveFtCache();
       renderFtTable(getSortedFtStocks());
       if (rows.length > 0) loadChart(rows[0].sym);
     })
@@ -687,6 +786,7 @@ function attachFtRowListeners(tr) {
       removeFtSymbol(sym);
       const idx = FT_STOCKS.findIndex((s) => s.sym === sym);
       if (idx >= 0) FT_STOCKS.splice(idx, 1);
+      saveFtCache();
       tr.remove();
       if (FT_STOCKS.length === 0 && tbody) {
         tbody.innerHTML = '<tr><td colspan="8" class="empty-cell">No symbols. Add one above.</td></tr>';
@@ -726,6 +826,7 @@ function renderFtTable(stocks) {
       removeFtSymbol(sym);
       const idx = FT_STOCKS.findIndex((s) => s.sym === sym);
       if (idx >= 0) FT_STOCKS.splice(idx, 1);
+      saveFtCache();
       const tr = tbody.querySelector(`tr[data-sym="${sym}"]`);
       if (tr) tr.remove();
       if (FT_STOCKS.length === 0) {
@@ -801,6 +902,7 @@ function setupFtAddRemove() {
         if (rows.length === 0) return;
         const row = rows[0];
         FT_STOCKS.push(row);
+        saveFtCache();
         const sorted = getSortedFtStocks();
         const idx = sorted.findIndex((s) => s.sym === sym);
         const emptyRow = tbody.querySelector('.empty-cell');
@@ -817,6 +919,291 @@ function setupFtAddRemove() {
       })
       .catch((err) => {
         removeFtSymbol(sym);
+        console.error(err);
+      });
+  }
+  btn.addEventListener('click', addFromInput);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') addFromInput(); });
+}
+
+// --- OO: same structure and behaviour as CUB/FT (add/remove symbols, own list) ---
+function getOoSymbols() {
+  try {
+    const raw = localStorage.getItem(OO_STORAGE_KEY);
+    if (!raw) return [...OO_DEFAULT_SYMBOLS];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) && arr.length > 0 ? arr : [...OO_DEFAULT_SYMBOLS];
+  } catch {
+    return [...OO_DEFAULT_SYMBOLS];
+  }
+}
+
+function setOoSymbols(symbols) {
+  localStorage.setItem(OO_STORAGE_KEY, JSON.stringify(symbols));
+}
+
+function addOoSymbol(sym) {
+  const s = (sym || '').toUpperCase().trim();
+  if (!s) return false;
+  const list = getOoSymbols();
+  if (list.includes(s)) return false;
+  list.push(s);
+  setOoSymbols(list);
+  return true;
+}
+
+function removeOoSymbol(sym) {
+  const list = getOoSymbols().filter((x) => x !== sym);
+  setOoSymbols(list);
+}
+
+const OO_STOCKS = [];
+let sortStateOo = { key: null, dir: 1 };
+
+async function fetchOoData() {
+  return fetchCubDataForSymbols(getOoSymbols());
+}
+
+function saveOoCache() {
+  try {
+    if (OO_STOCKS.length > 0) {
+      localStorage.setItem(OO_CACHE_KEY, JSON.stringify({
+        symbols: getOoSymbols(),
+        rows: OO_STOCKS.slice(),
+      }));
+    } else {
+      localStorage.removeItem(OO_CACHE_KEY);
+    }
+  } catch (_) { /* ignore */ }
+}
+
+function ensureOoDataThenRender() {
+  const tbody = document.getElementById('oo-rows');
+  if (!tbody) return;
+  if (OO_STOCKS.length > 0) {
+    renderOoTable(getSortedOoStocks());
+    return;
+  }
+  const currentSymbols = getOoSymbols();
+  try {
+    const raw = localStorage.getItem(OO_CACHE_KEY);
+    if (raw && currentSymbols.length > 0) {
+      const { symbols, rows } = JSON.parse(raw);
+      if (Array.isArray(rows) && rows.length > 0 && sameSymbolSet(symbols, currentSymbols)) {
+        const ordered = rowsInSymbolOrder(rows, currentSymbols);
+        if (ordered.length > 0) {
+          OO_STOCKS.length = 0;
+          OO_STOCKS.push(...ordered);
+          renderOoTable(getSortedOoStocks());
+          if (ordered.length > 0) loadChart(ordered[0].sym);
+          return;
+        }
+      }
+    }
+  } catch (_) { /* ignore bad cache */ }
+  tbody.innerHTML = '<tr><td colspan="8" class="loading-cell">Loading OO…</td></tr>';
+  fetchOoData()
+    .then((rows) => {
+      OO_STOCKS.length = 0;
+      OO_STOCKS.push(...rows);
+      saveOoCache();
+      renderOoTable(getSortedOoStocks());
+      if (rows.length > 0) loadChart(rows[0].sym);
+    })
+    .catch((err) => {
+      const msg = err.message || String(err);
+      const is502 = /502|Bad Gateway/i.test(msg);
+      const hint = is502 ? ' The API may be temporarily unavailable. Try again in a moment.' : '';
+      tbody.innerHTML = `<tr><td colspan="8" class="error-cell">Failed to load OO: ${msg}.${hint} <button type="button" class="retry-btn" id="oo-retry-btn">Retry</button></td></tr>`;
+      const retryBtn = document.getElementById('oo-retry-btn');
+      if (retryBtn) retryBtn.addEventListener('click', () => ensureOoDataThenRender());
+      console.error(err);
+    });
+}
+
+function getSortedOoStocks() {
+  if (OO_STOCKS.length === 0) return [];
+  if (!sortStateOo.key) return [...OO_STOCKS];
+  const key = sortStateOo.key;
+  const dir = sortStateOo.dir;
+  return [...OO_STOCKS].sort((a, b) => {
+    let va = a[key];
+    let vb = b[key];
+    if (key === 'sym') {
+      va = (va || '').toLowerCase();
+      vb = (vb || '').toLowerCase();
+      return dir * (va < vb ? -1 : va > vb ? 1 : 0);
+    }
+    const na = va != null && va !== '' ? Number(va) : NaN;
+    const nb = vb != null && vb !== '' ? Number(vb) : NaN;
+    if (Number.isNaN(na) && Number.isNaN(nb)) return 0;
+    if (Number.isNaN(na)) return dir;
+    if (Number.isNaN(nb)) return -dir;
+    return dir * (na - nb);
+  });
+}
+
+function ooRowHtml(s, i) {
+  const starred = isStarred(s.sym);
+  return `
+    <tr data-sym="${s.sym}" data-index="${i}">
+      <td><button type="button" class="star-btn ${starred ? 'starred' : ''}" data-sym="${s.sym}" title="${starred ? 'Remove from star list' : 'Add to star list'}">${starred ? '★' : '☆'}</button></td>
+      <td>${s.sym}</td>
+      <td class="${(s.p1 != null && s.p1 >= 0) ? 'positive' : 'negative'}">${formatPercent(s.p1)}</td>
+      <td class="${(s.p2 != null && s.p2 >= 0) ? 'positive' : 'negative'}">${formatPercent(s.p2)}</td>
+      <td class="${(s.p3 != null && s.p3 >= 0) ? 'positive' : 'negative'}">${formatPercent(s.p3)}</td>
+      <td class="${(s.p4 != null && s.p4 >= 0) ? 'positive' : 'negative'}">${formatPercent(s.p4)}</td>
+      <td>${(s.rsi != null ? Number(s.rsi).toFixed(2) : '—')}</td>
+      <td><button type="button" class="remove-btn" data-sym="${s.sym}" title="Remove from OO list">−</button></td>
+    </tr>
+  `;
+}
+
+function renderOoTable(stocks) {
+  const tbody = document.getElementById('oo-rows');
+  if (!tbody) return;
+  if (!stocks || stocks.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-cell">No symbols. Add one above.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = stocks.map((s, i) => ooRowHtml(s, i)).join('');
+
+  tbody.querySelectorAll('.remove-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const sym = btn.dataset.sym;
+      removeOoSymbol(sym);
+      const idx = OO_STOCKS.findIndex((s) => s.sym === sym);
+      if (idx >= 0) OO_STOCKS.splice(idx, 1);
+      saveOoCache();
+      const tr = tbody.querySelector(`tr[data-sym="${sym}"]`);
+      if (tr) tr.remove();
+      if (OO_STOCKS.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-cell">No symbols. Add one above.</td></tr>';
+      }
+    });
+  });
+
+  tbody.querySelectorAll('.star-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const row = btn.closest('tr');
+      const sym = btn.dataset.sym;
+      const rowData = OO_STOCKS.find((s) => s.sym === sym) || null;
+      const nowStarred = toggleStar(sym, rowData);
+      btn.classList.toggle('starred', nowStarred);
+      btn.textContent = nowStarred ? '★' : '☆';
+      btn.title = nowStarred ? 'Remove from star list' : 'Add to star list';
+      renderStarList();
+    });
+  });
+
+  tbody.querySelectorAll('tr[data-sym]').forEach((row) => {
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('.star-btn') || e.target.closest('.remove-btn')) return;
+      loadChart(row.dataset.sym);
+    });
+  });
+}
+
+function updateOoSortIndicators() {
+  document.querySelectorAll('#panel-oo .data-table th[data-sort] .sort-icon').forEach((span) => {
+    const th = span.closest('th');
+    const key = th?.dataset.sort;
+    if (!key) return;
+    if (sortStateOo.key === key) {
+      span.textContent = sortStateOo.dir === 1 ? '▲' : '▼';
+    } else {
+      span.textContent = '▼';
+    }
+  });
+}
+
+function setupOoSortHandlers() {
+  document.querySelectorAll('#panel-oo .data-table th.sortable').forEach((th) => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      if (!key) return;
+      if (sortStateOo.key === key) sortStateOo.dir *= -1;
+      else sortStateOo = { key, dir: 1 };
+      updateOoSortIndicators();
+      renderOoTable(getSortedOoStocks());
+    });
+  });
+}
+
+function attachOoRowListeners(tr) {
+  if (!tr) return;
+  const sym = tr.dataset.sym;
+  const tbody = document.getElementById('oo-rows');
+  const removeBtn = tr.querySelector('.remove-btn');
+  const starBtn = tr.querySelector('.star-btn');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeOoSymbol(sym);
+      const idx = OO_STOCKS.findIndex((s) => s.sym === sym);
+      if (idx >= 0) OO_STOCKS.splice(idx, 1);
+      saveOoCache();
+      tr.remove();
+      if (OO_STOCKS.length === 0 && tbody) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-cell">No symbols. Add one above.</td></tr>';
+      }
+    });
+  }
+  if (starBtn) {
+    starBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const rowData = OO_STOCKS.find((s) => s.sym === sym) || null;
+      const nowStarred = toggleStar(sym, rowData);
+      starBtn.classList.toggle('starred', nowStarred);
+      starBtn.textContent = nowStarred ? '★' : '☆';
+      starBtn.title = nowStarred ? 'Remove from star list' : 'Add to star list';
+      renderStarList();
+    });
+  }
+  tr.addEventListener('click', (e) => {
+    if (e.target.closest('.star-btn') || e.target.closest('.remove-btn')) return;
+    loadChart(sym);
+  });
+}
+
+function setupOoAddRemove() {
+  const input = document.getElementById('oo-symbol-input');
+  const btn = document.getElementById('oo-add-btn');
+  const tbody = document.getElementById('oo-rows');
+  if (!input || !btn || !tbody) return;
+  function addFromInput() {
+    const sym = (input.value || '').toUpperCase().trim();
+    if (!sym) return;
+    if (!addOoSymbol(sym)) {
+      input.value = '';
+      return;
+    }
+    input.value = '';
+    if (getPageFromHash() !== 'oo') return;
+    fetchCubDataForSymbols([sym])
+      .then((rows) => {
+        if (rows.length === 0) return;
+        const row = rows[0];
+        OO_STOCKS.push(row);
+        saveOoCache();
+        const sorted = getSortedOoStocks();
+        const idx = sorted.findIndex((s) => s.sym === sym);
+        const emptyRow = tbody.querySelector('.empty-cell');
+        if (emptyRow) emptyRow.remove();
+        const html = ooRowHtml(row, idx);
+        if (idx <= 0 || tbody.children.length === 0) {
+          tbody.insertAdjacentHTML('afterbegin', html);
+        } else {
+          const ref = tbody.children[idx - 1];
+          ref.insertAdjacentHTML('afterend', html);
+        }
+        const newTr = tbody.querySelector(`tr[data-sym="${sym}"]`);
+        attachOoRowListeners(newTr);
+      })
+      .catch((err) => {
+        removeOoSymbol(sym);
         console.error(err);
       });
   }
@@ -1000,8 +1387,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupHomeSortHandlers();
   setupCubSortHandlers();
   setupFtSortHandlers();
+  setupOoSortHandlers();
   setupCubAddRemove();
   setupFtAddRemove();
+  setupOoAddRemove();
 
   const tbody = document.getElementById('stock-rows');
   if (tbody) {
